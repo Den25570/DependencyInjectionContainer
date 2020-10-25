@@ -44,11 +44,7 @@ namespace DependencyInjectionContainerLib
 
         public List<TDependency> Resolve<TDependency>()
         {
-            Type tDependency = typeof(TDependency);
-            if (tDependency.IsGenericType && tDependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
-            {
-                tDependency = tDependency.GenericTypeArguments[0];
-            }
+            Type tDependency = ExtractTypeIFEnumerable<TDependency>();
 
             if (tDependency.IsGenericType)
             {
@@ -118,6 +114,17 @@ namespace DependencyInjectionContainerLib
 
             return result;
 
+        }
+
+        private static Type ExtractTypeIFEnumerable<TDependency>()
+        {
+            Type tDependency = typeof(TDependency);
+            if (tDependency.IsGenericType && tDependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+            {
+                tDependency = tDependency.GenericTypeArguments[0];
+            }
+
+            return tDependency;
         }
 
         // Resolve for creating inner dependencies using reflection.

@@ -146,5 +146,23 @@ namespace DependencyInjectionTests
             Assert.That(objCar, Is.InstanceOf(typeof(Car)));
             Assert.That(objBike, Is.InstanceOf(typeof(Bike)));
         }
+
+        [Test]
+        public void TestComplexNamedDependency()
+        {
+            var dependencies = new DIConfiguration();
+            dependencies.Register<TDependency, TComplexNamedImplementation>(true);
+            dependencies.Register<IAnimal, Dog>(true);
+            dependencies.Register<IVehicle, Car>(true, ImplementationName.First);
+            dependencies.Register<IVehicle, Bike>(true, ImplementationName.Second);
+            var provider = new DIContainer(dependencies);
+
+            var complexImplementation = (TComplexNamedImplementation)provider.Resolve<TDependency>();
+
+            Assert.AreEqual(1, complexImplementation.vehicles.Count);
+            Assert.That(complexImplementation.vehicles[0], Is.InstanceOf<Car>());
+
+            Assert.AreEqual(typeof(Dog), complexImplementation.animal.GetType());
+        }
     }
 }

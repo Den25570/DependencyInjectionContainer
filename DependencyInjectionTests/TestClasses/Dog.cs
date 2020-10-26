@@ -6,14 +6,5 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public class Dog : IAnimal
-    {
-
-        public string name = "Jack";
-
-        public void Speak()
-        {
-            Console.WriteLine("Bark!");
-        }
-    }
+    public class Dog : IAnimal{}
 }

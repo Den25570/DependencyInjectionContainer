@@ -12,10 +12,7 @@ namespace DIUnitTests.TestClasses
         public IAnimal animal;
         public List<IVehicle> vehicles;
 
-        public override void DoNothing()
-        {
-            // There's nothing here, but what here's mine.
-        }
+        public override void DoNothing(){ }
 
         public TComplexImplementation(IAnimal animal, IEnumerable<IVehicle> vehicles)
         {

@@ -6,14 +6,5 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public class Bike : IVehicle
-    {
-
-        public int mass = 25;
-
-        public void Beep()
-        {
-            Console.WriteLine("Beep like a bike!");
-        }
-    }
+    public class Bike : IVehicle{}
 }

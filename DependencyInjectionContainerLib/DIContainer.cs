@@ -144,12 +144,14 @@ namespace DependencyInjectionContainerLib
         }
 
         // Resolve for creating inner dependencies using reflection.
-        public object ResolveFromType(Type t)
+        public object ResolveFromType(Type t, object dependencyName = null)
         {
             var resolveMethod = typeof(DIContainer).GetMethod("Resolve");
             var resolveType = resolveMethod.MakeGenericMethod(t);
 
-            object resolved = resolveType.Invoke(this, new object[1] { null });
+
+
+            object resolved = resolveType.Invoke(this, new object[1] { dependencyName });
             if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
             {               
                 var listType = typeof(List<>);
@@ -176,7 +178,8 @@ namespace DependencyInjectionContainerLib
 
                     Type paramType = param.ParameterType;
 
-                    parameterInstances[index] = ResolveFromType(paramType);
+                    var dependencyKey = param.GetCustomAttribute<DependencyKey>();
+                    parameterInstances[index] = ResolveFromType(paramType, dependencyKey != null ? dependencyKey.Name : null);
 
                     index++;
                 }

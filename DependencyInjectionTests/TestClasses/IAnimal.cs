@@ -6,8 +6,5 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public interface IAnimal
-    {
-        void Speak();
-    }
+    public interface IAnimal{ }
 }

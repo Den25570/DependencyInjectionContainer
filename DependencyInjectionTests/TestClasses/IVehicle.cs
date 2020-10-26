@@ -6,8 +6,5 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public interface IVehicle
-    {
-        void Beep();
-    }
+    public interface IVehicle{}
 }

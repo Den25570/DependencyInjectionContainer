@@ -1,8 +1,10 @@
 using DependencyInjectionContainerLib;
+using DependencyInjectionTests.TestClasses;
 using DIUnitTests;
 using DIUnitTests.TestClasses;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 
 namespace DependencyInjectionTests
 {
@@ -22,7 +24,7 @@ namespace DependencyInjectionTests
             dependencies.Register<TDependency, TImplementation>(true);
             var provider = new DIContainer(dependencies);
 
-            Assert.AreEqual(dependencies.dependenciesContainer[typeof(TDependency)].Count, 1);
+            Assert.AreEqual(1, dependencies.dependenciesContainer[typeof(TDependency)].Count);
         }
 
         // Simple check for resolving basic implementation.
@@ -33,7 +35,7 @@ namespace DependencyInjectionTests
             dependencies.Register<TDependency, TImplementation>(true);
             var provider = new DIContainer(dependencies);
             var obj = provider.Resolve<TDependency>();
-            Assert.That(obj[0], Is.InstanceOf(typeof(TImplementation)));
+            Assert.That(obj, Is.InstanceOf(typeof(TImplementation)));
         }
 
         // Checks for for resolving dependencies with multiple implementations
@@ -41,14 +43,15 @@ namespace DependencyInjectionTests
         public void TestResolvingMultipleImplementations()
         {
             var dependencies = new DIConfiguration();
-            dependencies.Register<TDependency, TImplementation>(true);
-            dependencies.Register<TDependency, TComplexImplementation>(true);
+            dependencies.Register<IVehicle, Car>(true);
+            dependencies.Register<IVehicle, Bike>(true);
             var provider = new DIContainer(dependencies);
-            var resolved = provider.Resolve<TDependency>();
+
+            var resolved = provider.Resolve<IEnumerable<IVehicle>>() as List<object>;
             Assert.AreEqual(resolved.Count, 2);
 
             Type[] actual = new Type[] { resolved[0].GetType(), resolved[1].GetType() };
-            Type[] expected = new Type[] { typeof(TComplexImplementation), typeof(TImplementation) };
+            Type[] expected = new Type[] { typeof(Car), typeof(Bike) };
 
             CollectionAssert.AreEquivalent(actual, expected);
         }
@@ -64,7 +67,7 @@ namespace DependencyInjectionTests
             dependencies.Register<IVehicle, Bike>(true);
             var provider = new DIContainer(dependencies);
 
-            var complexImplementation = (TComplexImplementation)provider.Resolve<TDependency>()[0];
+            var complexImplementation = (TComplexImplementation)provider.Resolve<TDependency>();
 
 
             // Check that IEnumerable<IVehicle> dependencies are created.
@@ -87,13 +90,13 @@ namespace DependencyInjectionTests
             dependencies.Register<IAnimal, Dog>(false);
             var provider = new DIContainer(dependencies);
 
-            var firstObject = provider.Resolve<TDependency>()[0];
-            var secondObject = provider.Resolve<TDependency>()[0];
+            var firstObject = provider.Resolve<TDependency>();
+            var secondObject = provider.Resolve<TDependency>();
 
             Assert.AreSame(firstObject, secondObject);
 
-            var thirdObject = provider.Resolve<IAnimal>()[0];
-            var fourthObject = provider.Resolve<IAnimal>()[0];
+            var thirdObject = provider.Resolve<IAnimal>();
+            var fourthObject = provider.Resolve<IAnimal>();
 
             Assert.AreNotSame(thirdObject, fourthObject);
         }
@@ -108,7 +111,7 @@ namespace DependencyInjectionTests
             dependencies.Register<TDependency, TImplementation>(true);
             var provider = new DIContainer(dependencies);
 
-            var genericObject = (ServiceImpl<TDependency>)provider.Resolve<IService<TDependency>>()[0];
+            var genericObject = (ServiceImpl<TDependency>)provider.Resolve<IService<TDependency>>();
 
             Assert.AreEqual(genericObject.repository.GetType(), typeof(TImplementation));
         }
@@ -123,9 +126,23 @@ namespace DependencyInjectionTests
             dependencies.Register<TDependency, TImplementation>(true);
             var provider = new DIContainer(dependencies);
 
-            var genericObject = (ServiceImpl<TDependency>)provider.Resolve<IService<TDependency>>()[0];
+            var genericObject = (ServiceImpl<TDependency>)provider.Resolve<IService<TDependency>>();
 
             Assert.AreEqual(genericObject.repository.GetType(), typeof(TImplementation));
+        }
+
+        [Test]
+        public void TestNamedImplementation()
+        {
+            var dependencies = new DIConfiguration();
+            dependencies.Register<IVehicle, Car>(true, ImplementationName.First);
+            dependencies.Register<IVehicle, Bike>(true, ImplementationName.Second);
+
+            var provider = new DIContainer(dependencies);
+
+            var obj = provider.Resolve<IVehicle>(ImplementationName.First);
+
+            Assert.That(obj, Is.InstanceOf(typeof(IVehicle)));
         }
     }
 }

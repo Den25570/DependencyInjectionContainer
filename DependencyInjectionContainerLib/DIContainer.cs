@@ -13,38 +13,13 @@ namespace DependencyInjectionContainerLib
 
         public DIContainer(DIConfiguration configuration)
         {
-            validateConfiguration(configuration);
             this.configuration = configuration;
         }
 
-        public void validateConfiguration(DIConfiguration configuration)
+        public object Resolve<TDependency>(object name = null)
         {
-            foreach (Type tDependency in configuration.dependenciesContainer.Keys)
-            {
-                if (tDependency.IsValueType)
-                {
-                    throw new ArgumentException("TDependency must be a reference type");
-                }
-
-                foreach (Type tImplementation in configuration.dependenciesContainer[tDependency])
-                {
-                    // Checks if TImplementation inherits from/implements TDependency
-                    if (!tDependency.IsAssignableFrom(tImplementation) && !tDependency.IsGenericTypeDefinition)
-                    {
-                        throw new ArgumentException("TImplementation must be inherited from/implement Dependency type.");
-                    }
-
-                    if (tImplementation.IsAbstract || !tImplementation.IsClass)
-                    {
-                        throw new ArgumentException("TImplementation must be a non-abstract class");
-                    }
-                }
-            }
-        }
-
-        public List<TDependency> Resolve<TDependency>()
-        {
-            Type tDependency = ExtractTypeIFEnumerable<TDependency>();
+            Type tDependency;
+            bool returnEnumerable = ExtractTypeIFEnumerable(typeof(TDependency), out tDependency);
 
             if (tDependency.IsGenericType)
             {
@@ -62,20 +37,22 @@ namespace DependencyInjectionContainerLib
                 throw new KeyNotFoundException($"Dependency {tDependency.ToString()} is not registered.");
             }
 
-            List<TDependency> result = new List<TDependency>();
-
             if (tDependency.IsGenericType && configuration.dependenciesContainer.ContainsKey(tDependency.GetGenericTypeDefinition()))
             {
 
                 var implementations = configuration.dependenciesContainer[tDependency.GetGenericTypeDefinition()];
-                foreach (var implementation in implementations)
-                {
-                    var genericType = implementation.MakeGenericType(tDependency.GetGenericArguments());
-                    var resolved = (TDependency)GetInstance(genericType);
-                    result.Add(resolved);
-                }
 
-                return result;
+                if (returnEnumerable)
+                {
+                    List<object> result = new List<object>();
+                    foreach (var implementation in implementations)
+                        result.Add(GetGenericTypeImplementation<TDependency>(tDependency, implementation));
+                    return result;
+                }
+                else
+                {                 
+                    return GetGenericTypeImplementation<TDependency>(tDependency, implementations.First());
+                }
 
             }
             else
@@ -84,47 +61,86 @@ namespace DependencyInjectionContainerLib
                 throw new KeyNotFoundException($"Dependency {tDependency.ToString()} is not registered.");
             }
 
-            foreach (var implementation in configuration.dependenciesContainer[tDependency])
+            if (returnEnumerable)
             {
-                TDependency resolved;
-
-                if (configuration.lifetimeSettings[implementation])
+                List<object> result = new List<object>();
+                foreach (var implementation in configuration.dependenciesContainer[tDependency].
+                Where(implementation => name == null || implementation.Name.Equals(name)))
                 {
-                    if (configuration.objectContainer[implementation].instance == null)
-                    {
-                        lock (configuration.objectContainer[implementation].syncRoot)
-                        {
-                            if (configuration.objectContainer[implementation].instance == null)
-                            {
-                                configuration.objectContainer[implementation].instance = GetInstance(implementation);
-                            }
-                        }
-                    }
-
-                    resolved = (TDependency)configuration.objectContainer[implementation].instance;
-
+                    result.Add(GetImplementation(implementation));
                 }
-                else
-                {
-                    resolved = (TDependency)GetInstance(implementation);
-                }
-
-                result.Add(resolved);
+                return result;
             }
+            else
+            {
+                var implementations = configuration.dependenciesContainer[tDependency].
+                    Where(dImplementation => (name == null) || (dImplementation.Name.Equals(name)));
 
-            return result;
+                return GetImplementation(implementations.First());
 
+            }        
         }
 
-        private static Type ExtractTypeIFEnumerable<TDependency>()
+        private object GetImplementation(DependencyImplementation implementation)
         {
-            Type tDependency = typeof(TDependency);
-            if (tDependency.IsGenericType && tDependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+            object resolved;
+
+            if (configuration.lifetimeSettings[implementation.Implementation])
             {
-                tDependency = tDependency.GenericTypeArguments[0];
+                if (configuration.objectContainer[implementation.Implementation].instance == null)
+                {
+                    lock (configuration.objectContainer[implementation.Implementation].syncRoot)
+                    {
+                        if (configuration.objectContainer[implementation.Implementation].instance == null)
+                        {
+                            configuration.objectContainer[implementation.Implementation].instance = GetInstance(implementation.Implementation);
+                        }
+                    }
+                }
+
+                resolved = configuration.objectContainer[implementation.Implementation].instance;
+
+            }
+            else
+            {
+                resolved = GetInstance(implementation.Implementation);
             }
 
-            return tDependency;
+            return resolved;
+        }
+
+        private TDependency GetGenericTypeImplementation<TDependency>(Type tDependency, DependencyImplementation implementation)
+        {
+            var genericType = implementation.Implementation.MakeGenericType(tDependency.GetGenericArguments());
+            var resolved = (TDependency)GetInstance(genericType);
+            return resolved;
+        }
+
+        private bool ExtractTypeIFEnumerable(Type originalType, out Type tDependency)
+        {
+            tDependency = originalType;
+            if ((tDependency.IsGenericType && tDependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>))) ||
+                tDependency.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+            {
+                tDependency = tDependency.GenericTypeArguments[0];
+                return true;
+            }
+
+            return false;
+        }
+
+        private object ConvertList(List<object> items, Type type, bool performConversion = false)
+        {
+            var containedType = type.GenericTypeArguments.First();
+            var enumerableType = typeof(System.Linq.Enumerable);
+            var castMethod = enumerableType.GetMethod(nameof(System.Linq.Enumerable.Cast)).MakeGenericMethod(containedType);
+            var toListMethod = enumerableType.GetMethod(nameof(System.Linq.Enumerable.ToList)).MakeGenericMethod(containedType);
+
+            IEnumerable<object> itemsToCast = items;
+
+            var castedItems = castMethod.Invoke(null, new[] { itemsToCast });
+
+            return toListMethod.Invoke(null, new[] { castedItems });
         }
 
         // Resolve for creating inner dependencies using reflection.
@@ -133,19 +149,16 @@ namespace DependencyInjectionContainerLib
             var resolveMethod = typeof(DIContainer).GetMethod("Resolve");
             var resolveType = resolveMethod.MakeGenericMethod(t);
 
-            var listType = typeof(List<>);
-            var constructedListType = listType.MakeGenericType(t);
-
-            dynamic resolved = Convert.ChangeType(resolveType.Invoke(this, null), constructedListType);
-
-            if (resolved.Count > 1)
-            {
-                return resolved;
+            object resolved = resolveType.Invoke(this, new object[1] { null });
+            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+            {               
+                var listType = typeof(List<>);
+                var constructedListType = listType.MakeGenericType(t.GetGenericArguments()[0]);
+                resolved = ConvertList(resolved as List<object>, constructedListType);
             }
-            else
-            {
-                return resolved[0];
-            }
+
+
+            return resolved;
         }
 
         private object GetInstance(Type t)
@@ -163,22 +176,7 @@ namespace DependencyInjectionContainerLib
 
                     Type paramType = param.ParameterType;
 
-                    if (paramType.IsGenericType && paramType.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
-                    {
-                        paramType = paramType.GenericTypeArguments[0];
-                    }
-
-                    if (paramType.IsGenericType)
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else
-                    {
-                        if (configuration.dependenciesContainer.ContainsKey(paramType))
-                        {
-                            parameterInstances[index] = ResolveFromType(paramType);
-                        }
-                    }
+                    parameterInstances[index] = ResolveFromType(paramType);
 
                     index++;
                 }

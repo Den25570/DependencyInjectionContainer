@@ -140,9 +140,11 @@ namespace DependencyInjectionTests
 
             var provider = new DIContainer(dependencies);
 
-            var obj = provider.Resolve<IVehicle>(ImplementationName.First);
+            var objCar = provider.Resolve<IVehicle>(ImplementationName.First);
+            var objBike = provider.Resolve<IVehicle>(ImplementationName.Second);
 
-            Assert.That(obj, Is.InstanceOf(typeof(IVehicle)));
+            Assert.That(objCar, Is.InstanceOf(typeof(Car)));
+            Assert.That(objBike, Is.InstanceOf(typeof(Bike)));
         }
     }
 }

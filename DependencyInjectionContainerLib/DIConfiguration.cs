@@ -20,6 +20,19 @@ namespace DependencyInjectionContainerLib
             Type tDependency = typeof(TDependency);
             Type tImplementation = typeof(TImplementation);
 
+            if (tDependency.IsValueType)
+            {
+                throw new ArgumentException("TDependency must be a reference type");
+            }
+            if (!tDependency.IsAssignableFrom(tImplementation) && !tDependency.IsGenericTypeDefinition)
+            {
+                throw new ArgumentException("TImplementation must be inherited from/implement Dependency type.");
+            }
+            if (tImplementation.IsAbstract || !tImplementation.IsClass)
+            {
+                throw new ArgumentException("TImplementation must be a non-abstract class");
+            }
+
             if (!dependenciesContainer.ContainsKey(tDependency))
             {
                 dependenciesContainer[tDependency] = new List<DependencyImplementation>();

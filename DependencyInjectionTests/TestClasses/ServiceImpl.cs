@@ -13,7 +13,7 @@ namespace DIUnitTests.TestClasses
 
         public void DoWhatYouAreBestAt(TRepository repository)
         {
-            repository.DoNothing();
+            repository.DoNothing(null);
         }
 
         public ServiceImpl(TRepository repository)

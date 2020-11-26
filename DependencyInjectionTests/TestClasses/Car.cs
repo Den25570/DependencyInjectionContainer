@@ -6,5 +6,11 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public class Car : IVehicle{}
+    public class Car : IVehicle
+    {
+        public bool DoNothing()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

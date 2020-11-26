@@ -6,5 +6,11 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public class Dog : IAnimal{}
+    public class Dog : IAnimal
+    {
+        public bool DoNothing()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

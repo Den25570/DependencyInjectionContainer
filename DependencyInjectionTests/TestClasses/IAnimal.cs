@@ -6,5 +6,8 @@ using System.Threading.Tasks;
 
 namespace DIUnitTests.TestClasses
 {
-    public interface IAnimal{ }
+    public interface IAnimal
+    {
+        bool DoNothing();
+    }
 }

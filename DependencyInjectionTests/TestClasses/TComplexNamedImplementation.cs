@@ -12,7 +12,7 @@ namespace DependencyInjectionTests.TestClasses
         public IAnimal animal;
         public List<IVehicle> vehicles;
 
-        public override void DoNothing() { }
+        public override bool DoNothing(IAnimal animal) { return animal.DoNothing(); }
 
         public TComplexNamedImplementation(IAnimal animal, [DependencyKey(ImplementationName.First)] IEnumerable<IVehicle> vehicles)
         {

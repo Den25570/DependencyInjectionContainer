@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DIUnitTests.TestClasses;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace DIUnitTests
 {
     public class TImplementation : TDependency
     {
-        public override void DoNothing(){}
+        public override bool DoNothing(IAnimal animal) { throw new NotImplementedException(); }
 
     }
 }

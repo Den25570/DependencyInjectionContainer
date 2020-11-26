@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DIUnitTests.TestClasses;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,6 @@ namespace DIUnitTests
 {
     public abstract class TDependency
     {
-        public abstract void DoNothing();
+        public abstract bool DoNothing(IAnimal animal);
     }
 }
